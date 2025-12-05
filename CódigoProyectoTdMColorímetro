@@ -1,0 +1,54 @@
+// --- CONFIGURACIÓN DE HARDWARE ---
+const int PIN_LED = 13;     // Fuente de luz (Emisor)
+const int PIN_LDR = A3;     // Sensor Fotorresistivo (Receptor)
+
+// --- VARIABLES GLOBALES ---
+int lecturaSensor = 0;      // Almacena el valor digital (0-1023)
+bool estadoMedicion = false;// Bandera de control (false = Standby, true = Midiendo)
+
+void setup() {
+  // Inicialización del puerto serial a 9600 baudios
+  Serial.begin(9600);
+  
+  // Configuración de pines
+  pinMode(PIN_LED, OUTPUT);
+  pinMode(PIN_LDR, INPUT);
+  
+  // Encendido permanente del LED para asegurar estabilidad térmica y lumínica
+  digitalWrite(PIN_LED, HIGH);
+  
+  // Tiempo de estabilización inicial del hardware
+  delay(500);
+}
+
+void loop() {
+  // 1. LECTURA DE COMANDOS SERIALES (Control de Flujo)
+  // Permite sincronizar el inicio de la toma de datos con la inyección del soluto
+  if (Serial.available() > 0) {
+    char comando = Serial.read();
+    
+    // Comando 'c' o 'C': INICIAR captura de datos (Comenzar experimento)
+    if (comando == 'c' || comando == 'C') {
+      estadoMedicion = true;
+    }
+    
+    // Comando 'f' o 'F': FINALIZAR captura de datos (Detener experimento)
+    if (comando == 'f' || comando == 'F') {
+      estadoMedicion = false;
+    }
+  }
+
+  // 2. RUTINA DE ADQUISICIÓN DE DATOS
+  // Se ejecuta solo si la bandera de medición está activa
+  if (estadoMedicion == true) {
+    // Lectura del Conversor Analógico-Digital (ADC)
+    lecturaSensor = analogRead(PIN_LDR);
+    
+    // Transmisión del dato crudo al PC (Serial Plotter / Excel)
+    Serial.println(lecturaSensor);
+    
+    // Control de la frecuencia de muestreo (Sample Rate)
+    // Delay de 200ms equivale a 5 muestras por segundo
+    delay(200); 
+  }
+}
